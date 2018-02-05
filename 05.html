@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+</head>
+<body>
+	
+</body>
+<script src="js/pixi.min.js"></script>
+<script>
+	let Application = PIXI.Application,
+		Container = PIXI.Container,
+		loader = PIXI.loader,
+		resources = PIXI.loader.resources,
+		TextureCache = PIXI.utils.TextureCache,
+		Sprite = PIXI.Sprite;
+
+	let app = new Application({
+		width:256,
+		height:256,
+		antialiasing:true,
+		transparent:false,
+		resolution:1
+	})
+
+	document.body.appendChild(app.view);
+
+	loader
+	.add("images/cat.png")
+	.load(setup);
+
+	function setup(){
+		let cat = new Sprite(resources["images/cat.png"].texture);
+
+		cat.x=0;
+		cat.y=0;
+
+		cat.width = 100;
+		cat.height = 100;
+		cat.anchor.x = 0.5;
+		cat.anchor.y = 0.5;
+		cat.rotation = 0;
+
+		app.stage.addChild(cat);
+	}
+</script>
+</html>

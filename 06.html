@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+</head>
+<body>
+	
+</body>
+<script src="js/pixi.min.js"></script>
+<script>
+	let Application = PIXI.Application,
+		Container = PIXI.Container,
+		loader = PIXI.loader,
+		resources = PIXI.resources,
+		TextureCache = PIXI.utils.TextureCache,
+		Sprite = PIXI.Sprite,
+		Rectangle = PIXI.Rectangle;
+
+	let app = new Application({ 
+	    width: 256, 
+	    height: 256,                       
+	    antialiasing: true, 
+	    transparent: false, 
+	    resolution: 1
+	  }
+	);
+	
+	document.body.appendChild(app.view);
+
+	loader
+	  .add("images/tileset.png")
+	  .load(setup);
+
+	function setup(){
+		let texture = TextureCache["images/tileset.png"];
+		let rectangle = new Rectangle(192,64,64,64);
+		texture.frame = rectangle;
+		let rocket = new Sprite(texture);
+		rocket.x=16;
+		rocket.y=16;
+		rocket.width=30;
+		rocket.height=30;
+		app.stage.addChild(rocket);
+	}
+</script>
+</html>
