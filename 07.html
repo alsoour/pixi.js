@@ -1,47 +1,261 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-	<meta charset="UTF-8">
-	<title>Document</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,user-scalable=no">
+    <title>Document</title>
+    <style>
+    * {
+        padding: 0;
+        margin: 0;
+    }
+
+    html,
+    body {
+        height: 100%;
+        width: 100%;
+    }
+    </style>
 </head>
+
 <body>
-	
 </body>
 <script src="js/pixi.min.js"></script>
+<script src="js/zepto.js"></script>
 <script>
-	let Application = PIXI.Application,
-		Container = PIXI.Container,
-		loader = PIXI.loader,
-		resources = PIXI.resources,
-		TextureCache = PIXI.utils.TextureCache,
-		Sprite = PIXI.Sprite,
-		Rectangle = PIXI.Rectangle;
+//Aliases
+$(function() {
+    let Application = PIXI.Application,
+        Container = PIXI.Container,
+        loader = PIXI.loader,
+        resources = PIXI.loader.resources,
+        Graphics = PIXI.Graphics,
+        TextureCache = PIXI.utils.TextureCache,
+        Sprite = PIXI.Sprite,
+        Text = PIXI.Text,
+        TextStyle = PIXI.TextStyle;
 
-	let app = new Application({ 
-	    width: 256, 
-	    height: 256,                       
-	    antialiasing: true, 
-	    transparent: false, 
-	    resolution: 1
-	  }
-	);
-	document.body.appendChild(app.view);
+    //Create a Pixi Application
+    let winW = document.body.clientWidth,
+        winH = document.body.clientHeight;
+    let app = new Application({
+        width: winW,
+        height: winH,
+        antialiasing: true,
+        transparent: false,
+        resolution: 1
+    });
+    document.body.appendChild(app.view);
 
-	loader
-	.add("images/cat.png")
-	.load(setup);
+    loader
+        .add("images/treasureHunter.json")
+        .load(setup);
 
-	let cat;
+    let state, explorer, treasure, blobs, chimes, exit, player, dungeon,
+        door, healthBar, message, gameScene, gameOverScene, enemies, id;
 
-	function setup(){
-		cat = new Sprite(resources["images/cat.png"].texture);
-		cat.y = 96;
-		app.stage.addChild(cat);
-		app.ticker.add(delta => gameLoop(delta));
-	}
+    function setup() {
+        gameScene = new Container();
+        // console.log(gameScene)
+        app.stage.addChild(gameScene);
 
-	function gameLoop(delta){
-		cat.x +=1;
-	}
+        id = resources["images/treasureHunter.json"].textures;
+
+        dungeon = new Sprite(id["dungeon.png"]);
+        gameScene.addChild(dungeon);
+
+        door = new Sprite(id["door.png"]);
+        door.position.set(100, 0)
+        gameScene.addChild(door);
+
+        explorer = new Sprite(id["explorer.png"]);
+        explorer.x = 68;
+        explorer.y = gameScene.height / 2 - explorer.height / 2;
+        explorer.vx = 0;
+        explorer.vy = 0;
+        gameScene.addChild(explorer);
+
+        treasure = new Sprite(id["treasure.png"]);
+        treasure.x = gameScene.width - treasure.width - 48;
+        treasure.y = gameScene.height / 2 - treasure.height / 2;
+        gameScene.addChild(treasure);
+
+        let numberOfBlobs = 6,
+            spacing = 48,
+            xOffset = 150,
+            speed = 2,
+            direction = 1;
+
+        blobs = [];
+
+        for (let i = 0; i < numberOfBlobs; i++) {
+            let blob = new Sprite(id["blob.png"]);
+
+            let x = spacing * i + xOffset;
+
+            let y = randomInt(0, app.stage.height - blob.height);
+
+            blob.x = x;
+            blob.y = y;
+
+            blob.vy = speed * direction;
+
+            direction *= -1;
+            blobs.push(blob);
+            gameScene.addChild(blob);
+        }
+
+        healthBar = new Container();
+        healthBar.position.set(app.stage.width - 170, 4);
+        gameScene.addChild(healthBar);
+
+        let innerBar = new Graphics();
+        innerBar.beginFill(0x000000);
+        innerBar.drawRect(0, 0, 128, 8);
+        innerBar.endFill();
+        healthBar.addChild(innerBar);
+
+        let outerBar = new Graphics();
+        outerBar.beginFill(0xFF3300);
+        outerBar.drawRect(0, 0, 128, 8);
+        outerBar.endFill();
+        healthBar.addChild(outerBar);
+
+        healthBar.outer = outerBar;
+
+        gameOverScene = new Container();
+        app.stage.addChild(gameOverScene);
+
+        let style = new TextStyle({
+            fontFamily: "Futura",
+            fontSize: 64,
+            fill: "white"
+        });
+        message = new Text("The End!", style);
+        message.x = 120;
+        message.y = app.stage.height / 2 - 32;
+        gameOverScene.addChild(message);
+
+
+        // gameScene.visible = false;
+        gameOverScene.visible = false;
+
+
+
+
+
+        let left = keyboard(37),
+            up = keyboard(38),
+            right = keyboard(39),
+            down = keyboard(40);
+
+        left.press = function() {
+
+            //Change the explorer's velocity when the key is pressed
+            explorer.vx = -5;
+        };
+
+        //Left arrow key `release` method
+        left.release = function() {
+
+            //If the left arrow has been released, and the right arrow isn't down,
+            //and the explorer isn't moving vertically:
+            //Stop the explorer
+            if (!right.isDown && explorer.vy === 0) {
+                explorer.vx = 0;
+            }
+        };
+        //Up
+        up.press = function() {
+            explorer.vy = -5;
+        };
+        up.release = function() {
+            if (!down.isDown && explorer.vx === 0) {
+                explorer.vy = 0;
+            }
+        };
+
+        //Right
+        right.press = function() {
+            explorer.vx = 5;
+        };
+        right.release = function() {
+            if (!left.isDown && explorer.vy === 0) {
+                explorer.vx = 0;
+            }
+        };
+
+        //Down
+        down.press = function() {
+            explorer.vy = 5;
+        };
+        down.release = function() {
+            if (!up.isDown && explorer.vx === 0) {
+                explorer.vy = 0;
+            }
+        };
+        // scaleX = winW/dungeon.width;
+        // scaleY = winW/dungeon.width;
+        // app.stage.scale.x = scaleX;
+        // app.stage.scale.y = scaleY;
+        state = play;
+        app.ticker.add(delta => gameLoop(delta));
+
+
+
+    }
+
+    function gameLoop(delta) {
+        state(delta);
+    }
+
+    function play() {
+    	explorer.x += explorer.vx;
+  		explorer.y += explorer.vy;
+    }
+
+    function randomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function keyboard(keyCode) {
+        var key = {};
+        key.code = keyCode;
+        key.isDown = false;
+        key.isUp = true;
+        key.press = undefined;
+        key.release = undefined;
+        //The `downHandler`
+        key.downHandler = function(event) {
+            if (event.keyCode === key.code) {
+                if (key.isUp && key.press) key.press();
+                key.isDown = true;
+                key.isUp = false;
+            }
+            event.preventDefault();
+        };
+
+        //The `upHandler`
+        key.upHandler = function(event) {
+            if (event.keyCode === key.code) {
+                if (key.isDown && key.release) key.release();
+                key.isDown = false;
+                key.isUp = true;
+            }
+            event.preventDefault();
+        };
+
+        //Attach event listeners
+        window.addEventListener(
+            "keydown", key.downHandler.bind(key), false
+        );
+        window.addEventListener(
+            "keyup", key.upHandler.bind(key), false
+        );
+        return key;
+    }
+})
 </script>
+
 </html>
